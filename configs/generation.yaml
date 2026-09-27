@@ -1,0 +1,104 @@
+# Shared configuration for the generation + classification pipeline.
+# Loaded by src/utils.py::load_config() in generate_trials.py and
+# add_classification_icons.py.
+#
+# This file is meant to change per dataset. Most of the time a trials CSV
+# only has an id column and sentence/image-generation-note columns; when a
+# CSV additionally has classification symbol columns (like this one does),
+# only the `csv:` and `icons:` sections below need to change — not the
+# scripts themselves.
+
+model:
+  id: black-forest-labs/FLUX.2-klein-4B
+  seed: 0
+
+csv:
+  id_column: trial_id
+  prompt_columns: [sentence, image_generation_note]
+  prompt_separator: " "
+
+generation:
+  # Which generation backend to use: "flux" (self-hosted FLUX.2-klein-4B,
+  # runs on this cluster's GPUs/CPUs), "gemini" (Google's Gemini image API,
+  # needs GEMINI_API_KEY), or "openai" (OpenAI's gpt-image-1.5, needs
+  # OPENAI_API_KEY). Override per run with generate_trials.py --backend.
+  backend: flux
+
+  width: 1024
+  height: 1024
+  steps: 4
+  guidance_scale: 1.0
+  cpu_offload: true
+  # "cuda" (default) or "cpu". CPU works but is far slower (minutes per
+  # image) since this is a 4B-parameter model with no CUDA kernels to fall
+  # back on — only use it when no GPU is available.
+  device: cuda
+  # Appended to every prompt so generated images match the flat cartoon
+  # reference style in assets/templates/. Used by both backends.
+  style_suffix: >-
+    flat vector cartoon illustration, bold black outlines, simple shapes,
+    bright saturated flat colors, solid opaque plain white background (not
+    transparent), children's picture-book style, no text, no watermark.
+    Every object must be a single, pure, uniform color with no secondary
+    color accents, unless the sentence explicitly names more than one
+    color. Any structural object mentioned (table, chair, door, etc.) must
+    show its defining physical features clearly, e.g. a table must show
+    its legs. Depict human agents in plain, everyday age-appropriate
+    clothing, not occupational, costume, or uniform attire, unless the
+    sentence says otherwise.
+
+  # Settings for backend: gemini. Unlike FLUX, Gemini image models accept
+  # real reference images (not just a text description), so the templates
+  # are passed in directly for style conditioning.
+  gemini:
+    model: gemini-3.1-flash-image
+    style_reference_images:
+      - assets/templates/example_image1.png
+      - assets/templates/example_image2.png
+
+  # Settings for backend: openai. Same style-conditioning approach as
+  # gemini — GPT image models accept reference images directly.
+  openai:
+    model: gpt-image-1.5
+    size: "1024x1024"
+    quality: medium
+    # "opaque" (default; always solid white per style_suffix), "transparent",
+    # or "auto" (model decides — can produce transparent/inconsistent
+    # backgrounds, which is why this pipeline pins it to opaque).
+    background: opaque
+    style_reference_images:
+      - assets/templates/example_image1.png
+      - assets/templates/example_image2.png
+
+paths:
+  trials_csv: data/input/image_captioning_constrain_language.csv
+  # Generated/classified images and manifests are regenerable pipeline
+  # outputs, so they live on $SCRATCH rather than in this git repo.
+  generated_dir: $SCRATCH/caption2image_data/generated
+  classified_dir: $SCRATCH/caption2image_data/classified
+  generation_manifest: $SCRATCH/caption2image_data/manifests/generation_manifest.csv
+  classification_manifest: $SCRATCH/caption2image_data/manifests/classification_manifest.csv
+
+icons:
+  # Which trials.csv columns hold the per-trial classification symbols, and
+  # which corner each one is drawn in. This trials CSV has 2 symbol columns
+  # (focus_symbol, response_symbol); a future CSV with a different number of
+  # symbol columns only needs this list changed, not add_classification_icons.py.
+  columns: [focus_symbol, response_symbol]
+  positions: [top_left, top_right]
+  margin: 24
+  font_size: 96
+  # Fallback chain of fonts, tried in order for each symbol's glyph coverage
+  # (add_classification_icons.py checks this per-symbol, falling through to
+  # the next font, and finally to Pillow's own default font):
+  #   1. NotoEmoji.ttf — pictographic symbols (e.g. 🎨 📍 🏃). Bundled from
+  #      Google's OFL-licensed Noto Emoji (assets/fonts/OFL.txt); the
+  #      monochrome vector variant, not the color-bitmap NotoColorEmoji,
+  #      since pip-installed Pillow builds generally can't render
+  #      color-bitmap emoji fonts.
+  #   2. DejaVuSans.ttf — broad general Unicode coverage (e.g. "?", "●",
+  #      arrows) that neither NotoEmoji nor Pillow's own default font have.
+  #      Bundled from the DejaVu Fonts project (assets/fonts/DejaVuSans-LICENSE.txt).
+  font_paths:
+    - assets/fonts/NotoEmoji.ttf
+    - assets/fonts/DejaVuSans.ttf

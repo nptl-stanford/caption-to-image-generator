@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Pipeline inputs/outputs (trials CSV, regenerated images from
+# src/generate_trials.py and src/add_classification_icons.py, and their
+# manifests) — keep the folders in git, ignore the contents.
+data/input/*
+!data/input/.gitkeep
+data/generated/*
+!data/generated/.gitkeep
+data/classified/*
+!data/classified/.gitkeep
+data/manifests/*
+!data/manifests/.gitkeep

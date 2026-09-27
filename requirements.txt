@@ -1,0 +1,28 @@
+# generation.backend: flux — self-hosted FLUX.2-klein-4B (src/generate_flux2_klein.py).
+# Large (GPU/CPU + multi-GB model download); skip these if you only use an
+# API backend (gemini/openai).
+torch
+diffusers @ git+https://github.com/huggingface/diffusers.git
+transformers
+accelerate
+safetensors
+sentencepiece
+
+# generation.backend: gemini — Google's Gemini image API (src/generate_gemini_image.py).
+# Lightweight, no GPU needed; requires GEMINI_API_KEY.
+google-genai
+
+# generation.backend: openai — OpenAI's gpt-image-1.5 (src/generate_gpt_image.py).
+# Lightweight, no GPU needed; requires OPENAI_API_KEY.
+openai
+
+# Shared by the gemini/openai backends (loads .env for API keys)
+python-dotenv
+
+# Pipeline utilities (used regardless of backend)
+Pillow>=10.1  # scalable default font + text anchors used in add_classification_icons.py
+PyYAML
+fonttools  # checks assets/fonts/*.ttf glyph coverage in add_classification_icons.py
+
+# Testing
+pytest
